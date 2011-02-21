@@ -15,6 +15,10 @@
 
                 $.post(action, form.serialize(), function(data, textStatus, jqXHR) {
                     $("#ajax-comment-list-holder").hide().html(data).fadeIn();
+
+                    form.find("[name]:not(:hidden)").filter("[type!='submit']").filter("[type!='button']").each(function(){
+                        $(this).val("");
+                    })
                 });
 
                 return false;
