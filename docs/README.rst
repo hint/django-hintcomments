@@ -23,5 +23,8 @@ Installation:
 Usage:
 ------
 
-All you need to do is substitute all {% load comments %} with {% load hintcomments %} and attach ``hintCommentForm`` on
-all forms that commit a comment.   
+All you need to do is :
+
+* substitute all ``{% load comments %}`` with ``{% load hintcomments %}``
+* substitute ``url(r'^comments/', include('django.contrib.comments.urls'))`` with ``url(r'^comments/', include('hintcomments.urls'))``
+* attach ``hintCommentForm`` on all forms that commit a comment.   
