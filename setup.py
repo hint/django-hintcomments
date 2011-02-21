@@ -5,7 +5,7 @@ from setuptools import find_packages, setup
 setup(
     name='django-hintcomments',
     version='0.0.1',
-    author='Adam Kaliński',
+    author='Adam Kalinski',
     author_email='adamkalinski@gmail.com',
     url='http://github.com/code22',
     description = 'Ajax support for django comments framework',
