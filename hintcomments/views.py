@@ -67,13 +67,12 @@ def ajax_post_comment(request, next=None, using=None):
                 "comments/list.html",
                 ]
 
-        res = render_to_response(
+        return render_to_response(
             template_list, {
                 "comment_list": comment_list,
                 },
             RequestContext(request, {})
         )
-        return res
     else:
         # go the default django path
         return post_comment(request, next=next, using=using)
