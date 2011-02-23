@@ -59,7 +59,7 @@ def ajax_post_comment(request, next=None, using=None):
             # todo: perform error checking
             pass
 
-        comment_list = Comment.objects.for_model(model).order_by("submit_date")
+        comment_list = Comment.objects.for_model(model).filter(object_pk=object_pk).order_by("submit_date")
 
         template_list = [
                 "comments/%s/%s/list.html" % (model._meta.app_label, model._meta.module_name),

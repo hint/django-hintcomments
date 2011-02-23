@@ -20,6 +20,12 @@ def render_comment_here(object):
         last_comment = ""
     return safe('<input type="hidden" name="last_comment_pk" value="%s"/>' % last_comment)
 
+@register.simple_tag
+def ajax_comment_pagination(comments_selector, paginate_by=5):
+    opts = []
+    opts.append('<input type="hidden" name="%s" value="%s"/>' % ('comments_selector', comments_selector))
+    opts.append('<input type="hidden" name="%s" value="%s"/>' % ('paginate_by', paginate_by))
+    return mark_safe('<div class="pagination-container"></div>%s' % ''.join(opts))
 
 def render_comment_list(parser, token, element_id="comment-list-holder"):
     return RenderAjaxCommentListNode.handle_token(parser, token)
