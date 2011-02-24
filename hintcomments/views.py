@@ -1,15 +1,12 @@
-from functools import wraps
 from django.contrib.comments.models import Comment
-from django.contrib.contenttypes.models import ContentType
 from django.contrib import comments
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
-from django.http import HttpResponse, HttpResponseBadRequest, HttpRequest
 from django.contrib.comments.views.comments import post_comment, CommentPostBadRequest
 from django.shortcuts import render_to_response
 from django.template.context import RequestContext
 from django.db import models
 from django.utils.html import escape
-from multikino.hintcomments.http import FormInvalidResponse
+from hintcomments.http import FormInvalidResponse
 from django.contrib.comments import signals
 
 
