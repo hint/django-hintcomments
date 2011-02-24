@@ -5,6 +5,7 @@ from django.contrib.comments.views.comments import post_comment, CommentPostBadR
 from django.shortcuts import render_to_response
 from django.template.context import RequestContext
 from django.db import models
+from django.utils.translation import ugettext as _
 from django.utils.html import escape
 from hintcomments.http import FormInvalidResponse
 from django.contrib.comments import signals
@@ -76,8 +77,7 @@ def ajax_post_comment(request, next=None, using=None):
 
         for (receiver, response) in responses:
             if response == False:
-                return CommentPostBadRequest(
-                    "comment_will_be_posted receiver %r killed the comment" % receiver.__name__)
+                return FormInvalidResponse(form_template_list, form, extra_errors=[_('Comment has been rejected')])
 
         # Save the comment and signal that it was saved
         comment.save()
@@ -94,7 +94,7 @@ def ajax_post_comment(request, next=None, using=None):
                 "comments/%s/list.html" % model._meta.app_label,
                 "comments/list.html",
                 ]
-        print "up to the end"
+        
         return render_to_response(
             template_list, {
                 "comment_list": comment_list,

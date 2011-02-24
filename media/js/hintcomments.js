@@ -72,6 +72,12 @@
                 });
 
                 $("#comment-form").ajaxError(function(event, request, settings, error) {
+                    console.log(request.status);
+
+                    if($.trim(request.responseText) === ""){
+                        alert("Error while loading comment. Please refresh the page.");
+                        return false;
+                    }
                     var new_form = $(request.responseText);
                     $(this).replaceWith(new_form);
                     new_form.hintCommentForm();
