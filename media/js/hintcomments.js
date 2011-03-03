@@ -72,8 +72,6 @@
                 });
 
                 $("#comment-form").ajaxError(function(event, request, settings, error) {
-                    console.log(request.status);
-
                     if($.trim(request.responseText) === ""){
                         alert("Error while loading comment. Please refresh the page.");
                         return false;
@@ -85,6 +83,7 @@
 
                 $.post(action, form.serialize(), function(data, textStatus, jqXHR) {
                     $("#ajax-comment-list-holder").hide().html(data).hintCommentPagination().fadeIn();
+                    $("#comment-form").find(":input:visible").each(function(){ $(this).val("") })
                 });
 
                 return false;
