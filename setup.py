@@ -4,7 +4,7 @@ from setuptools import find_packages, setup
 
 setup(
     name='django-hintcomments',
-    version='0.0.1',
+    version='0.0.2',
     author='Adam Kalinski',
     author_email='adamkalinski@gmail.com',
     url='http://github.com/code22',
