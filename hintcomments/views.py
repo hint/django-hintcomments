@@ -2,13 +2,18 @@ from django.contrib.comments.models import Comment
 from django.contrib import comments
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.contrib.comments.views.comments import post_comment, CommentPostBadRequest
-from django.shortcuts import render_to_response
-from django.template.context import RequestContext
 from django.db import models
 from django.utils.translation import ugettext as _
 from django.utils.html import escape
 from hintcomments.http import FormInvalidResponse
 from django.contrib.comments import signals
+import json
+from django.http import HttpResponse
+from django.core.serializers.json import DjangoJSONEncoder
+from django.forms.models import model_to_dict
+from django.utils.timesince import timesince
+
+FIELDS = ('id', 'comment', 'submit_date', 'user_name', 'content_type', 'object_pk')
 
 
 def ajax_post_comment(request, next=None, using=None):
@@ -33,33 +38,32 @@ def ajax_post_comment(request, next=None, using=None):
                 "Invalid content_type value: %r" % escape(ctype))
         except AttributeError:
             return CommentPostBadRequest(
-                "The given content-type %r does not resolve to a valid model." %\
+                "The given content-type %r does not resolve to a valid model." %
                 escape(ctype))
         except ObjectDoesNotExist:
             return CommentPostBadRequest(
-                "No object matching content-type %r and object PK %r exists." %\
+                "No object matching content-type %r and object PK %r exists." %
                 (escape(ctype), escape(object_pk)))
         except (ValueError, ValidationError), e:
             return CommentPostBadRequest(
-                "Attempting go get content-type %r and object PK %r exists raised %s" %\
+                "Attempting go get content-type %r and object PK %r exists raised %s" %
                 (escape(ctype), escape(object_pk), e.__class__.__name__))
 
-
         form_template_list = [
-                "comments/%s/%s/form.html" % (model._meta.app_label, model._meta.module_name),
-                "comments/%s/form.html" % model._meta.app_label,
-                "comments/form.html",
-                ]
+            "comments/%s/%s/form.html" % (model._meta.app_label, model._meta.module_name),
+            "comments/%s/form.html" % model._meta.app_label,
+            "comments/form.html",
+        ]
 
         # Construct the comment form
         form = comments.get_form()(target, data=data)
 
         # Check security information
         if form.security_errors():
-            return FormInvalidResponse(form_template_list,form)
+            return FormInvalidResponse(form_template_list, form)
 
-        if form.errors:# or preview:
-            return FormInvalidResponse(form_template_list,form)
+        if form.errors:  # or preview:
+            return FormInvalidResponse(form_template_list, form)
 #            return HttpResponseBadRequest('<script type="text/javascript">alert("Ujjj zlllee");</script>')
 
         # Otherwise create the comment
@@ -69,40 +73,37 @@ def ajax_post_comment(request, next=None, using=None):
             comment.user = request.user
 
         # Signal that the comment is about to be saved
-        responses = signals.comment_will_be_posted.send(
-            sender  = comment.__class__,
-            comment = comment,
-            request = request
-        )
+        responses = signals.comment_will_be_posted.send(sender=comment.__class__, comment=comment, request=request)
 
         for (receiver, response) in responses:
-            if response == False:
+            if response==False:
                 return FormInvalidResponse(form_template_list, form, extra_errors=[_('Comment has been rejected')])
 
         # Save the comment and signal that it was saved
         comment.save()
-        signals.comment_was_posted.send(
-            sender  = comment.__class__,
-            comment = comment,
-            request = request
-        )
+        signals.comment_was_posted.send(sender=comment.__class__, comment=comment, request=request)
 
-        comment_list = Comment.objects.for_model(model).\
-                       filter(object_pk=object_pk, is_public=True, is_removed=False).\
-                       order_by("submit_date")
+        comment = model_to_dict(comment, fields=FIELDS)
 
-        template_list = [
-                "comments/%s/%s/list.html" % (model._meta.app_label, model._meta.module_name),
-                "comments/%s/list.html" % model._meta.app_label,
-                "comments/list.html",
-                ]
-        
-        return render_to_response(
-            template_list, {
-                "comment_list": comment_list,
-                },
-            RequestContext(request, {})
-        )
+        _add_timesince([comment])
+
+        return HttpResponse(json.dumps(comment, cls=DjangoJSONEncoder), content_type="application/json")
     else:
         # go the default django path
         return post_comment(request, next=next, using=using)
+
+
+def _add_timesince(comments):
+    for comment in comments:
+        comment['timesince'] = timesince(comment['submit_date'])
+    return comments
+
+
+def comment_list(request, content_type_id, object_pk, last_comment_id=None):
+    limit = 31  # this is also hardcoded in JavaScript
+    comments = Comment.objects.filter(content_type__id=content_type_id, object_pk=object_pk)
+    if last_comment_id:
+        comments = comments.filter(id__lt=last_comment_id)
+    comments = comments.values(*FIELDS).order_by('-submit_date')[:limit]
+    _add_timesince(comments)
+    return HttpResponse(json.dumps(list(comments), cls=DjangoJSONEncoder), content_type="application/json")
