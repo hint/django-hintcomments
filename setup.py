@@ -10,6 +10,7 @@ setup(
     url='http://github.com/code22',
     description = 'Ajax support for django comments framework',
     packages=find_packages(),
+    install_requires=['django-ipware', 'django-recaptcha'],
     provides=['hintcomments'],
     classifiers=[
         'Framework :: Django',

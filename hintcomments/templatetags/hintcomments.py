@@ -1,11 +1,15 @@
 # -*- coding: utf-8 -*-
 
+from __future__ import absolute_import  # fixes: from hintcomments import app_settings
 from django.contrib.comments.templatetags import comments as _comments
 from django.contrib.comments.models import Comment
 from django import template
 from django.contrib.contenttypes.models import ContentType
 from django.template.defaultfilters import safe
 from django.utils.safestring import mark_safe
+from ipware.ip import get_ip as get_real_ip
+from django.core.cache import cache
+from hintcomments import app_settings
 
 register = template.Library()
 
@@ -53,19 +57,40 @@ def ajax_comment_pagination(parser, token):
     return AjaxPaginationNode(comments_selector, **kwargs)
 
 
+class RenderCommentFormNode(_comments.RenderCommentFormNode):
+    def get_form(self, context):
+        ip = get_real_ip(context['request'])
+        captcha = False
+        if ip:
+            comments_count = cache.get('comments_count_for_%s' % ip, 0)
+            print '>>> comments_count', comments_count
+            if comments_count >= app_settings.MAX_INSTANT_COMMENTS:
+                captcha = True
+        ctype, object_pk = self.get_target_ctype_pk(context)
+        if object_pk:
+            return _comments.comments.get_form()(ctype.get_object_for_this_type(pk=object_pk), captcha=captcha)
+        else:
+            return None
+
+
 class RenderAjaxCommentListNode(_comments.RenderCommentListNode):
     def render(self, context):
         return mark_safe(
             '<div id="ajax-comment-list-holder">%s</div>' % super(RenderAjaxCommentListNode, self).render(context))
 
+
 def render_comment_list(parser, token):
     return RenderAjaxCommentListNode.handle_token(parser, token)
+
+
+def render_comment_form(parser, token):
+    return RenderCommentFormNode.handle_token(parser, token)
 
 
 register.tag(_comments.get_comment_count)
 register.tag(_comments.get_comment_list)
 register.tag(_comments.get_comment_form)
-register.tag(_comments.render_comment_form)
+register.tag(render_comment_form)
 register.tag(render_comment_list)
 register.tag(ajax_comment_pagination)
 register.simple_tag(_comments.comment_form_target)

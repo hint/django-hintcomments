@@ -12,22 +12,24 @@ from django.http import HttpResponse
 from django.core.serializers.json import DjangoJSONEncoder
 from django.forms.models import model_to_dict
 from django.utils.timesince import timesince
+from django.core.cache import cache
+from hintcomments import app_settings
+from ipware.ip import get_ip as get_real_ip
+
 
 FIELDS = ('id', 'comment', 'submit_date', 'user_name', 'content_type', 'object_pk')
 
 
 def ajax_post_comment(request, next=None, using=None):
     if request.is_ajax():
-        # Fill out some initial data fields from an authenticated user, if present
-        data = request.POST.copy()
-        if request.user.is_authenticated():
-            if not data.get('name', ''):
-                data["name"] = request.user.get_full_name() or request.user.username
-            if not data.get('email', ''):
-                data["email"] = request.user.email
-
-        ctype = data.get("content_type")
-        object_pk = data.get("object_pk")
+        ctype = request.POST.get("content_type")
+        object_pk = request.POST.get("object_pk")
+        ip = get_real_ip(request)
+        captcha = False
+        if ip:
+            comments_count = cache.get('comments_count_for_%s' % ip, 0)
+            if comments_count >= app_settings.MAX_INSTANT_COMMENTS:
+                captcha = True
         if ctype is None or object_pk is None:
             return CommentPostBadRequest("Missing content_type or object_pk field.")
         try:
@@ -56,7 +58,7 @@ def ajax_post_comment(request, next=None, using=None):
         ]
 
         # Construct the comment form
-        form = comments.get_form()(target, data=data)
+        form = comments.get_form()(target, data=request.POST, captcha=captcha)
 
         # Check security information
         if form.security_errors():
@@ -81,6 +83,13 @@ def ajax_post_comment(request, next=None, using=None):
 
         # Save the comment and signal that it was saved
         comment.save()
+        if ip:
+            if captcha:  # captcha was provided correclty reset comment count
+                comments_count == 0
+            else:
+                comments_count += 1
+            cache.set('comments_count_for_%s' % ip, comments_count, app_settings.COMMENTS_COOLDOWN)
+
         signals.comment_was_posted.send(sender=comment.__class__, comment=comment, request=request)
 
         comment = model_to_dict(comment, fields=FIELDS)
