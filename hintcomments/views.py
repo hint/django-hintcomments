@@ -14,7 +14,8 @@ from django.forms.models import model_to_dict
 from django.utils.timesince import timesince
 from django.core.cache import cache
 from hintcomments import app_settings
-from ipware.ip import get_ip as get_real_ip
+from ipware.ip import get_real_ip
+from django.utils.html import escape
 
 
 FIELDS = ('id', 'comment', 'submit_date', 'user_name', 'content_type', 'object_pk')
@@ -94,7 +95,7 @@ def ajax_post_comment(request, next=None, using=None):
 
         comment = model_to_dict(comment, fields=FIELDS)
 
-        _add_timesince([comment])
+        _prepare_comments([comment])
 
         return HttpResponse(json.dumps(comment, cls=DjangoJSONEncoder), content_type="application/json")
     else:
@@ -102,8 +103,10 @@ def ajax_post_comment(request, next=None, using=None):
         return post_comment(request, next=next, using=using)
 
 
-def _add_timesince(comments):
+def _prepare_comments(comments):
     for comment in comments:
+        comment['user_name'] = escape(comment['user_name'])
+        comment['comment'] = escape(comment['comment'])
         comment['timesince'] = timesince(comment['submit_date'])
     return comments
 
@@ -114,5 +117,5 @@ def comment_list(request, content_type_id, object_pk, last_comment_id=None):
     if last_comment_id:
         comments = comments.filter(id__lt=last_comment_id)
     comments = comments.values(*FIELDS).order_by('-submit_date')[:limit]
-    _add_timesince(comments)
+    _prepare_comments(comments)
     return HttpResponse(json.dumps(list(comments), cls=DjangoJSONEncoder), content_type="application/json")

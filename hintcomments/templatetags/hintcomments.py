@@ -7,7 +7,7 @@ from django import template
 from django.contrib.contenttypes.models import ContentType
 from django.template.defaultfilters import safe
 from django.utils.safestring import mark_safe
-from ipware.ip import get_ip as get_real_ip
+from ipware.ip import get_real_ip
 from django.core.cache import cache
 from hintcomments import app_settings
 
