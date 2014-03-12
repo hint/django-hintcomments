@@ -63,7 +63,6 @@ class RenderCommentFormNode(_comments.RenderCommentFormNode):
         captcha = False
         if ip:
             comments_count = cache.get('comments_count_for_%s' % ip, 0)
-            print '>>> comments_count', comments_count
             if comments_count >= app_settings.MAX_INSTANT_COMMENTS:
                 captcha = True
         ctype, object_pk = self.get_target_ctype_pk(context)

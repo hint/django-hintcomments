@@ -85,7 +85,7 @@ def ajax_post_comment(request, next=None, using=None):
         comment.save()
         if ip:
             if captcha:  # captcha was provided correclty reset comment count
-                comments_count == 0
+                comments_count = 0
             else:
                 comments_count += 1
             cache.set('comments_count_for_%s' % ip, comments_count, app_settings.COMMENTS_COOLDOWN)
