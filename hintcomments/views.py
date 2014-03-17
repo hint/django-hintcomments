@@ -113,7 +113,7 @@ def _prepare_comments(comments):
 
 def comment_list(request, content_type_id, object_pk, last_comment_id=None):
     limit = 31  # this is also hardcoded in JavaScript
-    comments = Comment.objects.filter(content_type__id=content_type_id, object_pk=object_pk)
+    comments = Comment.objects.filter(content_type__id=content_type_id, object_pk=object_pk, is_public=True, is_removed=False)
     if last_comment_id:
         comments = comments.filter(id__lt=last_comment_id)
     comments = comments.values(*FIELDS).order_by('-submit_date')[:limit]
