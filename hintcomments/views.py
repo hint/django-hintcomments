@@ -56,7 +56,7 @@ def ajax_post_comment(request, next=None, using=None):
             "comments/%s/%s/form.html" % (model._meta.app_label, model._meta.module_name),
             "comments/%s/form.html" % model._meta.app_label,
             "comments/form.html",
-            ]
+        ]
 
         # Construct the comment form
         form = comments.get_form()(target, data=request.POST, captcha=captcha)
