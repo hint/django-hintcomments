@@ -56,7 +56,7 @@ def ajax_post_comment(request, next=None, using=None):
             "comments/%s/%s/form.html" % (model._meta.app_label, model._meta.module_name),
             "comments/%s/form.html" % model._meta.app_label,
             "comments/form.html",
-        ]
+            ]
 
         # Construct the comment form
         form = comments.get_form()(target, data=request.POST, captcha=captcha)
@@ -72,6 +72,9 @@ def ajax_post_comment(request, next=None, using=None):
         # Otherwise create the comment
         comment = form.get_comment_object()
         comment.ip_address = request.META.get("REMOTE_ADDR", None)
+
+        if not comment.pk:
+            comment = _check_for_duplicate_comment(form, comment)
         if request.user.is_authenticated():
             comment.user = request.user
 
@@ -101,6 +104,23 @@ def ajax_post_comment(request, next=None, using=None):
     else:
         # go the default django path
         return post_comment(request, next=next, using=using)
+
+
+def _check_for_duplicate_comment(form, new):
+    possible_duplicates = form.get_comment_model()._default_manager.using(
+        form.target_object._state.db
+    ).filter(
+        content_type = new.content_type,
+        object_pk = new.object_pk,
+        user_email = new.user_email,
+        user_url = new.user_url,
+        ip_address = new.ip_address,
+    )
+    for old in possible_duplicates:
+        if old.submit_date.date() == new.submit_date.date() and old.ip_address == new.ip_address:
+            return old
+
+    return new
 
 
 def _prepare_comments(comments):
