@@ -16,11 +16,14 @@ from django.core.cache import cache
 from hintcomments import app_settings
 from ipware.ip import get_real_ip
 from django.utils.html import escape
+from django.views.decorators.csrf import csrf_exempt
+
 
 
 FIELDS = ('id', 'comment', 'submit_date', 'user_name', 'content_type', 'object_pk')
 
 
+@csrf_exempt
 def ajax_post_comment(request, next=None, using=None):
     if request.is_ajax():
         ctype = request.POST.get("content_type")
